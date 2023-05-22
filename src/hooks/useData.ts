@@ -1,39 +1,50 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../assets/services/api-client';
-import { AxiosRequestConfig, CanceledError } from 'axios';
-
+import { AxiosRequestConfig } from 'axios';
 
 interface FetchResponse<T> {
     count: number;
-    results: T[]
+    results: T[];
 }
 
-const useData = (endpoint: string, requestConfig?: AxiosRequestConfig, deps?: any[]) => {
-    const [data, setData] = useState<T[]>([])
-    const [error, setError] = useState("")
+function useData<T>(
+    endpoint: string,
+    requestConfig?: AxiosRequestConfig,
+    deps?: Array<unknown> | undefined
+) {
+    const [data, setData] = useState<T[]>([]);
+    const [error, setError] = useState('');
     const [isLoading, setLoading] = useState(false);
 
     useEffect(() => {
-        const controller = new AbortController()
-        setLoading(true)
-        apiClient.get<FetchResponse<T>>(endpoint, { signal: controller.signal, ...requestConfig })
-            .then(res => {
-                setData(res.data.results)
-                setLoading(false)
-            })
+        let isMounted = true;
 
-            .catch(err => {
-                if (err instanceof CanceledError) return
-                setError(err.message)
-                setLoading(false)
-            })
+        const fetchData = async () => {
+            setLoading(true);
 
-        return () => controller.abort()
+            try {
+                const response = await apiClient.get<FetchResponse<T>>(endpoint, requestConfig);
 
-    }, deps ? [...deps] : [])
+                if (isMounted) {
+                    setData(response.data.results);
+                    setLoading(false);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    setError(err.message);
+                    setLoading(false);
+                }
+            }
+        };
 
-    return { data, error, isLoading }
+        fetchData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    return { data, error, isLoading };
 }
 
-
-export default useData
+export default useData;
