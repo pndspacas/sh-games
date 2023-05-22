@@ -10,7 +10,7 @@ interface FetchResponse<T> {
 function useData<T>(
     endpoint: string,
     requestConfig?: AxiosRequestConfig,
-    deps?: Array<unknown> | undefined
+    deps?: any[] | undefined
 ) {
     const [data, setData] = useState<T[]>([]);
     const [error, setError] = useState('');
